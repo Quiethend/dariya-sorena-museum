@@ -3,16 +3,25 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
 import { useAppStore, type ViewId } from "@/lib/store";
-import { site } from "@/lib/data/story";
-import { albums } from "@/lib/data/albums";
+import { useLocale } from "@/lib/i18n";
+// Featured release data (Edame Midam)
+const FEATURED = {
+  title: "Edame Midam",
+  subtitle: "Dariya & Sorena",
+  year: "2023",
+  cover: "/images/edame-midam-cover.jpg",
+  description: "Edame Midam is made in winter and it's about more cheering song that telling you the more you try forward you will close to get your achievement",
+  spotifyUrl: "https://open.spotify.com/artist/5FTRHkve9KJ91ZMpDz4Zaf?si=yG-_iGz8TYibzQ2aqs4AEw",
+};
 import { chapters } from "@/lib/data/story";
 import { Reveal } from "@/components/site/reveal";
 import { ArrowDown, Play, ArrowRight } from "lucide-react";
 
 export function HomeView() {
+  const { t } = useLocale();
   const setView = useAppStore((s) => s.setView);
   const setShowMusicPlayer = useAppStore((s) => s.setShowMusicPlayer);
-  const setAlbumDetail = useAppStore((s) => s.setAlbumDetail);
+
 
   const heroRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
@@ -42,7 +51,7 @@ export function HomeView() {
           className="absolute inset-0"
         >
           <img
-            src="/images/hero-fog.png"
+            src="/images/hero-main.png"
             alt="Cinematic fog in an underground hall"
             className="w-full h-full object-cover ken-burns"
             fetchPriority="high"
@@ -65,19 +74,19 @@ export function HomeView() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 1.2 }}
-            className="font-mono text-[10px] sm:text-xs uppercase tracking-luxe text-[oklch(0.82_0.11_80)] mb-6 sm:mb-8"
+            className="font-mono text-[10px] sm:text-xs uppercase tracking-luxe text-[oklch(0.52_0.24_12)] mb-6 sm:mb-8"
           >
-            {site.tagline} · Est. {site.formedYear}
+            {t("home.hero.tagline")}
           </motion.p>
 
           <motion.h1
             initial={{ opacity: 0, y: 30, letterSpacing: "0.5em" }}
             animate={{ opacity: 1, y: 0, letterSpacing: "0.02em" }}
             transition={{ delay: 0.7, duration: 1.6, ease: [0.16, 1, 0.3, 1] }}
-            className="font-display font-light text-5xl sm:text-7xl md:text-8xl lg:text-9xl text-foreground leading-[0.95]"
+            className="font-display font-light text-5xl sm:text-7xl md:text-8xl lg:text-9xl text-foreground leading-[0.95] text-center"
           >
             DARIYA
-            <span className="block sm:inline text-gold-gradient sm:mx-4 my-1 sm:my-0">
+            <span className="block sm:inline text-crimson-gradient sm:mx-4 my-1 sm:my-0">
               &
             </span>
             SORENA
@@ -89,9 +98,7 @@ export function HomeView() {
             transition={{ delay: 1.3, duration: 1.2 }}
             className="mt-8 sm:mt-10 max-w-xl mx-auto text-sm sm:text-base text-foreground/70 leading-relaxed"
           >
-            An interactive digital museum dedicated to one of the earliest
-            Persian hip-hop duos. Their story, their sound, their legacy —
-            preserved in light and fog.
+            {t("home.hero.subtitle")}
           </motion.p>
 
           <motion.div
@@ -102,20 +109,19 @@ export function HomeView() {
           >
             <button
               onClick={() => go("story")}
-              className="group px-8 py-3.5 bg-foreground text-background rounded-full text-xs font-mono uppercase tracking-cine hover:bg-[oklch(0.82_0.11_80)] transition-colors duration-500 flex items-center gap-2 cursor-pointer"
+              className="group px-8 py-3.5 bg-foreground text-background rounded-full text-xs font-mono uppercase tracking-cine hover:bg-[oklch(0.52_0.24_12)] transition-colors duration-500 flex items-center gap-2 cursor-pointer"
             >
-              Enter the Archive
+              {t("home.hero.story")}
               <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
             </button>
             <button
               onClick={() => {
                 setShowMusicPlayer(true);
-                go("albums");
               }}
               className="group px-8 py-3.5 glass rounded-full text-xs font-mono uppercase tracking-cine text-foreground hover:bg-foreground/10 transition-colors duration-500 flex items-center gap-2 cursor-pointer"
             >
               <Play className="w-3 h-3" />
-              Listen
+              {t("home.hero.listen")}
             </button>
           </motion.div>
         </motion.div>
@@ -128,7 +134,7 @@ export function HomeView() {
           className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2"
         >
           <span className="font-mono text-[10px] uppercase tracking-luxe text-muted-foreground">
-            Scroll
+            {t("home.hero.scroll")}
           </span>
           <motion.div
             animate={{ y: [0, 8, 0] }}
@@ -143,19 +149,29 @@ export function HomeView() {
       <section className="relative py-24 sm:py-32 px-5 sm:px-8">
         <div className="mx-auto max-w-5xl text-center">
           <Reveal>
-            <p className="font-mono text-[10px] uppercase tracking-luxe text-[oklch(0.82_0.11_80)] mb-8">
-              The Archive
+            <p className="font-mono text-[10px] uppercase tracking-luxe text-[oklch(0.52_0.24_12)] mb-8">
+              {t("home.intro.label")}
             </p>
           </Reveal>
           <Reveal delay={0.1}>
             <p className="font-display text-2xl sm:text-4xl md:text-5xl font-light text-foreground/90 leading-[1.3]">
-              Two voices that met in the margins of a city that wasn&apos;t
-              listening — and gave Persian hip-hop{" "}
-              <span className="text-gold-gradient italic">its first language</span>.
+              {(() => {
+                const text = t("home.intro.text");
+                const parts = text.split("{highlight}");
+                return parts[0] ? (
+                  <>
+                    {parts[0]}
+                    {parts[1] !== undefined && (
+                      <span className="text-crimson-gradient italic">{t("home.intro.highlight")}</span>
+                    )}
+                    {parts[1] || ""}
+                  </>
+                ) : null;
+              })()}
             </p>
           </Reveal>
           <Reveal delay={0.2}>
-            <div className="mt-10 divider-gold w-24 mx-auto" />
+            <div className="mt-10 divider-crimson w-24 mx-auto" />
           </Reveal>
         </div>
       </section>
@@ -166,25 +182,25 @@ export function HomeView() {
           <Reveal>
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-12 sm:mb-16">
               <div>
-                <p className="font-mono text-[10px] uppercase tracking-luxe text-[oklch(0.82_0.11_80)] mb-3">
-                  The Story
+                <p className="font-mono text-[10px] uppercase tracking-luxe text-[oklch(0.52_0.24_12)] mb-3">
+                  {t("home.chapters.label")}
                 </p>
                 <h2 className="font-display text-4xl sm:text-5xl font-light text-foreground">
-                  Nine chapters of a career
+                  {t("home.chapters.title")}
                 </h2>
               </div>
               <button
                 onClick={() => go("story")}
                 className="self-start sm:self-auto group text-sm font-mono uppercase tracking-cine text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2 cursor-pointer"
               >
-                Read the story
+                {t("home.chapters.readStory")}
                 <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
           </Reveal>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-            {chapters.slice(0, 3).map((c, i) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            {chapters.map((c, i) => (
               <Reveal key={c.id} delay={i * 0.1}>
                 <button
                   onClick={() => go("story")}
@@ -198,13 +214,10 @@ export function HomeView() {
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
-                    <div className="absolute top-4 left-4 font-display text-3xl text-[oklch(0.82_0.11_80)] font-light">
+                    <div className="absolute top-4 left-4 font-display text-3xl text-[oklch(0.52_0.24_12)] font-light">
                       {c.index}
                     </div>
                     <div className="absolute bottom-0 left-0 right-0 p-5">
-                      <p className="font-mono text-[10px] uppercase tracking-cine text-muted-foreground mb-1">
-                        {c.year}
-                      </p>
                       <h3 className="font-display text-2xl font-light text-foreground">
                         {c.title}
                       </h3>
@@ -227,10 +240,10 @@ export function HomeView() {
                   {/* vinyl behind */}
                   <div className="absolute inset-0 vinyl rounded-full translate-x-1/4 scale-90 opacity-60 vinyl-spin" />
                   {/* cover */}
-                  <div className="relative aspect-square rounded-lg overflow-hidden glow-gold">
+                  <div className="relative aspect-square rounded-lg overflow-hidden glow-crimson">
                     <img
-                      src={albums[3].cover}
-                      alt={albums[3].title}
+                      src={FEATURED.cover}
+                      alt={FEATURED.title}
                       loading="lazy"
                       className="w-full h-full object-cover"
                     />
@@ -241,35 +254,34 @@ export function HomeView() {
 
             <Reveal delay={0.15}>
               <div>
-                <p className="font-mono text-[10px] uppercase tracking-luxe text-[oklch(0.82_0.11_80)] mb-4">
-                  Latest Release · {albums[3].year}
+                <p className="font-mono text-[10px] uppercase tracking-luxe text-[oklch(0.52_0.24_12)] mb-4">
+                  {t("home.featured.label")}
                 </p>
                 <h2 className="font-display text-5xl sm:text-6xl font-light text-foreground mb-2">
-                  {albums[3].title}
+                  {FEATURED.title}
                 </h2>
                 <p className="font-display text-xl text-muted-foreground italic mb-8">
-                  {albums[3].subtitle}
+                  {FEATURED.subtitle}
                 </p>
                 <p className="text-sm sm:text-base text-foreground/70 leading-relaxed mb-10 max-w-lg">
-                  {albums[3].story[0]}
+                  {t("home.featured.description")}
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <button
-                    onClick={() => {
-                      go("albums");
-                      setAlbumDetail(albums[3].id);
-                    }}
-                    className="group px-8 py-3.5 bg-foreground text-background rounded-full text-xs font-mono uppercase tracking-cine hover:bg-[oklch(0.82_0.11_80)] transition-colors duration-500 flex items-center justify-center gap-2 cursor-pointer"
+                  <a
+                    href={FEATURED.spotifyUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group px-8 py-3.5 bg-foreground text-background rounded-full text-xs font-mono uppercase tracking-cine hover:bg-[oklch(0.52_0.24_12)] transition-colors duration-500 flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    Open the album
+                    {t("home.featured.listenOnSpotify")}
                     <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                  </button>
+                  </a>
                   <button
                     onClick={() => setShowMusicPlayer(true)}
                     className="group px-8 py-3.5 glass rounded-full text-xs font-mono uppercase tracking-cine text-foreground hover:bg-foreground/10 transition-colors duration-500 flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <Play className="w-3 h-3" />
-                    Play
+                    {t("home.featured.play")}
                   </button>
                 </div>
               </div>
@@ -279,26 +291,28 @@ export function HomeView() {
       </section>
 
       {/* ===== STATS / LEGACY ===== */}
+      {/* Sentinel for scroll-to-top button */}
+      <div id="scroll-top-sentinel" />
       <section className="relative py-24 sm:py-32 px-5 sm:px-8 border-t border-foreground/8">
         <div className="mx-auto max-w-7xl">
           <Reveal>
-            <p className="font-mono text-[10px] uppercase tracking-luxe text-[oklch(0.82_0.11_80)] mb-4 text-center">
-              The Legacy
+            <p className="font-mono text-[10px] uppercase tracking-luxe text-[oklch(0.52_0.24_12)] mb-4 text-center">
+              {t("home.legacy.label")}
             </p>
             <h2 className="font-display text-4xl sm:text-5xl font-light text-foreground text-center mb-16">
-              Two decades in the archive
+              {t("home.legacy.title")}
             </h2>
           </Reveal>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 sm:gap-12">
             {[
-              { value: "20+", label: "Years of music" },
-              { value: "4", label: "Studio albums" },
-              { value: "9", label: "Story chapters" },
-              { value: "∞", label: "Songs remembered" },
+              { value: "20+", label: t("home.legacy.years") },
+              { value: "4", label: t("home.legacy.albums") },
+              { value: "5", label: t("home.legacy.chapters") },
+              { value: "∞", label: t("home.legacy.songs") },
             ].map((stat, i) => (
               <Reveal key={i} delay={i * 0.08}>
                 <div className="text-center">
-                  <p className="font-display text-5xl sm:text-6xl font-light text-gold-gradient mb-3">
+                  <p className="font-display text-5xl sm:text-6xl font-light text-crimson-gradient mb-3">
                     {stat.value}
                   </p>
                   <p className="font-mono text-[10px] uppercase tracking-cine text-muted-foreground">
@@ -316,47 +330,28 @@ export function HomeView() {
         <div className="mx-auto max-w-7xl">
           <Reveal>
             <h2 className="font-display text-4xl sm:text-5xl font-light text-foreground text-center mb-16">
-              Explore the museum
+              {t("home.cards.title")}
             </h2>
           </Reveal>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
               {
                 view: "story" as ViewId,
-                title: "Story",
-                desc: "An interactive documentary across nine chapters.",
-                img: chapters[3].image,
+                title: t("nav.story"),
+                desc: t("home.cards.story"),
+                img: "/images/story-card.png",
               },
               {
                 view: "gallery" as ViewId,
-                title: "Gallery",
-                desc: "An art exhibition of photographs and memories.",
-                img: "/images/gallery-portrait-1.png",
+                title: t("nav.gallery"),
+                desc: t("home.cards.gallery"),
+                img: "/images/gallery-card.png",
               },
               {
                 view: "albums" as ViewId,
-                title: "Albums",
-                desc: "A premium discography with dedicated pages.",
-                img: albums[2].cover,
-              },
-              {
-                view: "timeline" as ViewId,
-                title: "Timeline",
-                desc: "The milestones that defined a career.",
-                img: "/images/chapter-royal-band.png",
-              },
-              {
-                view: "videos" as ViewId,
-                title: "Videos",
-                desc: "Music videos, live shows, and documentaries.",
-                img: "/images/gallery-concert-1.png",
-              },
-              {
-                view: "home" as ViewId,
-                title: "Listen",
-                desc: "The persistent player, always within reach.",
-                img: albums[0].cover,
-                action: () => setShowMusicPlayer(true),
+                title: t("nav.spotify"),
+                desc: t("home.cards.spotify"),
+                img: "/images/spotify-card.png",
               },
             ].map((card, i) => (
               <Reveal key={card.title} delay={i * 0.06}>
@@ -382,8 +377,8 @@ export function HomeView() {
                     <p className="text-xs text-muted-foreground max-w-xs">
                       {card.desc}
                     </p>
-                    <span className="mt-4 inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-cine text-[oklch(0.82_0.11_80)] opacity-0 group-hover:opacity-100 transition-opacity">
-                      Enter <ArrowRight className="w-3 h-3" />
+                    <span className="mt-4 inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-cine text-[oklch(0.52_0.24_12)] opacity-0 group-hover:opacity-100 transition-opacity">
+                      {t("home.cards.enter")} <ArrowRight className="w-3 h-3" />
                     </span>
                   </div>
                 </button>
@@ -395,17 +390,21 @@ export function HomeView() {
 
       {/* ===== CLOSING QUOTE ===== */}
       <section className="relative py-32 sm:py-48 px-5 sm:px-8 overflow-hidden">
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: "url('/images/quote-bg.png')" }}
+        />
+        <div className="absolute inset-0 bg-background/70" />
         <div className="fog-layer opacity-50" />
         <div className="mx-auto max-w-4xl text-center relative z-10">
           <Reveal>
             <p className="font-display text-3xl sm:text-5xl font-light text-foreground/90 italic leading-[1.4]">
-              “We weren&apos;t trying to be the first. We were trying to be
-              honest — and honesty, back then, sounded like something new.”
+              {t("home.quote")}
             </p>
           </Reveal>
           <Reveal delay={0.2}>
             <p className="mt-8 font-mono text-[10px] uppercase tracking-luxe text-muted-foreground">
-              — Dariya & Sorena
+              {t("home.quote.attr")}
             </p>
           </Reveal>
         </div>

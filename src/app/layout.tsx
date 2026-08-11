@@ -25,16 +25,16 @@ const spaceMono = Space_Mono({
   display: "swap",
 });
 
-const SITE_URL = "https://dariyasorena.archives";
+const SITE_URL = "https://dariyasorena.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Dariya & Sorena — The Official Archive | Persian Hip-Hop Pioneers",
+    default: "Dariya & Sorena — Official Website | Persian Hip-Hop Pioneers",
     template: "%s · Dariya & Sorena",
   },
   description:
-    "The definitive interactive digital museum dedicated to Dariya & Sorena, one of the earliest Persian hip-hop duos. Explore their story, albums, gallery, timeline, videos, and legacy across an immersive cinematic experience.",
+    "The official website of Dariya & Sorena — one of the earliest Persian hip-hop duos. Explore their biography, albums, gallery, timeline, videos, and legacy across an immersive cinematic experience.",
   keywords: [
     "Dariya & Sorena",
     "Dariya and Sorena",
@@ -47,9 +47,9 @@ export const metadata: Metadata = {
     " underground hip-hop",
     "Persian rap pioneers",
   ],
-  authors: [{ name: "Dariya & Sorena Archive" }],
-  creator: "Dariya & Sorena Archive",
-  publisher: "Dariya & Sorena Archive",
+  authors: [{ name: "Dariya & Sorena" }],
+  creator: "Dariya & Sorena",
+  publisher: "Dariya & Sorena",
   alternates: {
     canonical: SITE_URL,
   },
@@ -58,17 +58,17 @@ export const metadata: Metadata = {
     apple: "/logo.svg",
   },
   openGraph: {
-    title: "Dariya & Sorena — The Official Archive",
+    title: "Dariya & Sorena — Official Website",
     description:
-      "An interactive digital museum celebrating the story, music, and legacy of Dariya & Sorena, pioneers of Persian hip-hop.",
+      "The official website of Dariya & Sorena, pioneers of Persian hip-hop. Explore their story, music, and legacy.",
     url: SITE_URL,
-    siteName: "Dariya & Sorena Archive",
+    siteName: "Dariya & Sorena",
     images: [
       {
         url: "/images/og-cover.png",
         width: 1344,
         height: 768,
-        alt: "Dariya & Sorena — The Official Archive",
+        alt: "Dariya & Sorena — Official Website",
       },
     ],
     locale: "en_US",
@@ -76,9 +76,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Dariya & Sorena — The Official Archive",
+    title: "Dariya & Sorena — Official Website",
     description:
-      "An interactive digital museum celebrating the story, music, and legacy of Persian hip-hop pioneers Dariya & Sorena.",
+      "The official website of Persian hip-hop pioneers Dariya & Sorena. Explore their story, music, and legacy.",
     images: ["/images/og-cover.png"],
     creator: "@dariyasorena",
   },
@@ -106,6 +106,7 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
         {/* Schema.org: MusicGroup */}
         <script
@@ -176,7 +177,7 @@ export default function RootLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "WebSite",
-              name: "Dariya & Sorena Archive",
+              name: "Dariya & Sorena",
               url: SITE_URL,
               potentialAction: {
                 "@type": "SearchAction",

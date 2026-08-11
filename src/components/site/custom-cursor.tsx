@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 
 function useMediaQuery(query: string): boolean {
   const getSnapshot = useCallback(() => {
@@ -23,6 +23,7 @@ function useMediaQuery(query: string): boolean {
 export function CustomCursor() {
   const [mounted, setMounted] = useState(false);
   const enabled = useMediaQuery("(hover: hover) and (pointer: fine)");
+  const rafRef = useRef(0);
 
   useEffect(() => {
     const raf = requestAnimationFrame(() => setMounted(true));
@@ -32,49 +33,62 @@ export function CustomCursor() {
   useEffect(() => {
     if (!enabled || !mounted) return;
 
-    const dot = document.getElementById("cursor-dot");
-    const ring = document.getElementById("cursor-ring");
-    if (!dot || !ring) return;
+    const micEl = document.getElementById("cursor-mic");
+    const signalEl = document.getElementById("cursor-signal");
+    if (!micEl || !signalEl) return;
 
-    let mouseX = window.innerWidth / 2;
-    let mouseY = window.innerHeight / 2;
-    let ringX = mouseX;
-    let ringY = mouseY;
-    let raf = 0;
+    // Current target positions (set from mousemove)
+    let targetX = window.innerWidth / 2;
+    let targetY = window.innerHeight / 2;
+    // Smoothed positions for rendering
+    let micX = targetX;
+    let micY = targetY;
+    let sigX = targetX;
+    let sigY = targetY;
 
-    const onMove = (e: MouseEvent) => {
-      mouseX = e.clientX;
-      mouseY = e.clientY;
-      dot.style.transform = `translate(${mouseX}px, ${mouseY}px) translate(-50%, -50%)`;
+    // Use a single rAF loop for ALL positioning — eliminates jank
+    const loop = () => {
+      // Mic follows mouse with very high interpolation (near-instant)
+      micX += (targetX - micX) * 0.85;
+      micY += (targetY - micY) * 0.85;
+
+      // Signal follows with noticeable lag
+      sigX += (targetX - sigX) * 0.12;
+      sigY += (targetY - sigY) * 0.12;
+
+      // Use left/top for positioning (GPU-friendly, no transform conflicts)
+      micEl.style.left = `${micX}px`;
+      micEl.style.top = `${micY}px`;
+      signalEl.style.left = `${sigX}px`;
+      signalEl.style.top = `${sigY}px`;
+
+      rafRef.current = requestAnimationFrame(loop);
     };
+
+    // Only update target coords in mousemove — no DOM writes here
+    const onMove = (e: MouseEvent) => {
+      targetX = e.clientX;
+      targetY = e.clientY;
+    };
+
+    // Hover detection for signal wave animation
+    const SELECTOR =
+      "a, button, [role='button'], input, textarea, [data-cursor='hover'], [data-cursor='mic-signal']";
 
     const onOver = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (
-        target.closest(
-          "a, button, [role='button'], input, textarea, [data-cursor='hover']"
-        )
-      ) {
+      if (target.closest(SELECTOR)) {
         document.body.classList.add("cursor-hover");
       }
     };
     const onOut = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (
-        target.closest(
-          "a, button, [role='button'], input, textarea, [data-cursor='hover']"
-        )
-      ) {
+      if (target.closest(SELECTOR)) {
         document.body.classList.remove("cursor-hover");
       }
     };
 
-    const loop = () => {
-      ringX += (mouseX - ringX) * 0.18;
-      ringY += (mouseY - ringY) * 0.18;
-      ring.style.transform = `translate(${ringX}px, ${ringY}px) translate(-50%, -50%)`;
-      raf = requestAnimationFrame(loop);
-    };
+    // Start loop
     loop();
 
     window.addEventListener("mousemove", onMove);
@@ -83,19 +97,54 @@ export function CustomCursor() {
     document.body.classList.add("custom-cursor-active");
 
     return () => {
+      cancelAnimationFrame(rafRef.current);
       window.removeEventListener("mousemove", onMove);
       document.removeEventListener("mouseover", onOver);
       document.removeEventListener("mouseout", onOut);
-      cancelAnimationFrame(raf);
       document.body.classList.remove("custom-cursor-active", "cursor-hover");
     };
   }, [enabled, mounted]);
 
   if (!mounted || !enabled) return null;
+
   return (
     <>
-      <div id="cursor-dot" className="cursor-dot" aria-hidden="true" />
-      <div id="cursor-ring" className="cursor-ring" aria-hidden="true" />
+      {/* Signal waves — follows with lag, only animates on hover */}
+      <div id="cursor-signal" className="cursor-signal-wrap" aria-hidden="true">
+        <div className="cursor-signal-wave" />
+        <div className="cursor-signal-wave" />
+        <div className="cursor-signal-wave" />
+      </div>
+
+      {/* Microphone cursor — follows mouse near-instantly */}
+      <div id="cursor-mic" className="cursor-mic-wrap" aria-hidden="true">
+        <svg
+          width="22"
+          height="34"
+          viewBox="0 0 22 34"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          {/* Outer glow halo */}
+          <circle className="mic-glow" cx="11" cy="10" r="14" fill="oklch(0.52 0.24 12 / 12%)" />
+          {/* Mic head capsule — outer shell */}
+          <rect x="3.5" y="1" width="15" height="18" rx="7.5" fill="oklch(0.52 0.24 12)" />
+          {/* Mic head capsule — inner grille area */}
+          <rect x="5" y="2.5" width="12" height="15" rx="6" fill="oklch(0.10 0.006 270)" />
+          {/* Grille horizontal lines */}
+          <line x1="7" y1="5.5" x2="15" y2="5.5" stroke="oklch(0.52 0.24 12 / 40%)" strokeWidth="0.6" />
+          <line x1="7" y1="7.5" x2="15" y2="7.5" stroke="oklch(0.52 0.24 12 / 35%)" strokeWidth="0.6" />
+          <line x1="7" y1="9.5" x2="15" y2="9.5" stroke="oklch(0.52 0.24 12 / 40%)" strokeWidth="0.6" />
+          <line x1="7" y1="11.5" x2="15" y2="11.5" stroke="oklch(0.52 0.24 12 / 35%)" strokeWidth="0.6" />
+          <line x1="7" y1="13.5" x2="15" y2="13.5" stroke="oklch(0.52 0.24 12 / 30%)" strokeWidth="0.6" />
+          {/* Mic body / stem */}
+          <rect x="9" y="19" width="4" height="7" rx="2" fill="oklch(0.52 0.24 12)" />
+          {/* Mic holder arc */}
+          <path d="M5.5 26 C5.5 29 7 30 11 30 C15 30 16.5 29 16.5 26" stroke="oklch(0.52 0.24 12)" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+          {/* Stand stem */}
+          <line x1="11" y1="30" x2="11" y2="33" stroke="oklch(0.52 0.24 12 / 50%)" strokeWidth="1.2" strokeLinecap="round" />
+        </svg>
+      </div>
     </>
   );
 }

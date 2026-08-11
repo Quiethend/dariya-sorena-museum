@@ -113,9 +113,9 @@ export const timelineEvents: TimelineEvent[] = [
     id: "t-11",
     year: "Forward",
     title: "Future Vision",
-    subtitle: "The archive continues",
+    subtitle: "The journey continues",
     description:
-      "Plans for a long-form documentary, a remastered reissue program, and collaborations with a new generation. The archive is not finished. The language keeps speaking.",
+      "Plans for a long-form documentary, a remastered reissue program, and collaborations with a new generation. The story is not finished. The language keeps speaking.",
     type: "future",
     image: "/images/chapter-future.png",
   },

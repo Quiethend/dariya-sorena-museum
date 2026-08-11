@@ -139,7 +139,7 @@ export const albums: Album[] = [
     story: [
       "Akharin Seda arrived after a long silence — and it sounded like one. The album was quieter than anything the duo had released before: sparser production, longer silences, verses that unfolded like letters rather than declarations. It was, in every sense, the work of two people who had nothing left to prove.",
       "The title — 'The Last Sound' — was less a farewell than an acknowledgment that some music only arrives when the noise stops. Tracks stretched past the five-minute mark, building tension through restraint rather than force. The beats were softer, the samples more personal, and the overall mood was of late-night conversations where the important things go unsaid.",
-      "The album was followed by a period of quiet that fans interpreted as retirement, hiatus, or simply the next phase of a career that had always refused to announce its intentions in advance. The archive, as always, would have the final word.",
+      "The album was followed by a period of quiet that fans interpreted as retirement, hiatus, or simply the next phase of a career that had always refused to announce its intentions in advance. Their music, as always, would have the final word.",
     ],
     tracks: [
       { number: 1, title: "Aram (Quiet)", duration: "1:47" },

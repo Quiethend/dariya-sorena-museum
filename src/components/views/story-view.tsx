@@ -3,10 +3,12 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef, useEffect, useState } from "react";
 import { chapters } from "@/lib/data/story";
+import { useLocale } from "@/lib/i18n";
 import { Reveal } from "@/components/site/reveal";
 import { ArrowDown } from "lucide-react";
 
 export function StoryView() {
+  const { t } = useLocale();
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeChapter, setActiveChapter] = useState(0);
 
@@ -46,9 +48,9 @@ export function StoryView() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1 }}
-            className="font-mono text-[10px] uppercase tracking-luxe text-[oklch(0.82_0.11_80)] mb-6"
+            className="font-mono text-[10px] uppercase tracking-luxe text-[oklch(0.52_0.24_12)] mb-6"
           >
-            The Story
+            {t("story.label")}
           </motion.p>
           <motion.h1
             initial={{ opacity: 0, y: 30 }}
@@ -56,7 +58,7 @@ export function StoryView() {
             transition={{ duration: 1.2, delay: 0.1 }}
             className="font-display text-5xl sm:text-7xl font-light text-foreground leading-[1] mb-8"
           >
-            An interactive documentary
+            {t("story.title")}
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -64,9 +66,7 @@ export function StoryView() {
             transition={{ duration: 1, delay: 0.3 }}
             className="text-sm sm:text-base text-foreground/70 leading-relaxed max-w-2xl mx-auto"
           >
-            Nine chapters trace the journey of Dariya & Sorena — from a borrowed
-            microphone in Tehran to two decades of music, memory, and legacy.
-            Scroll to walk through the archive.
+            {t("story.subtitle")}
           </motion.p>
           <motion.div
             initial={{ opacity: 0 }}
@@ -97,7 +97,7 @@ export function StoryView() {
                 <span
                   className={`font-mono text-[10px] transition-colors ${
                     activeChapter === i
-                      ? "text-[oklch(0.82_0.11_80)]"
+                      ? "text-[oklch(0.52_0.24_12)]"
                       : "text-muted-foreground/50 group-hover:text-foreground"
                   }`}
                 >
@@ -106,7 +106,7 @@ export function StoryView() {
                 <span
                   className={`h-px transition-all duration-500 ${
                     activeChapter === i
-                      ? "w-10 bg-[oklch(0.82_0.11_80)]"
+                      ? "w-10 bg-[oklch(0.52_0.24_12)]"
                       : "w-5 bg-foreground/20"
                   }`}
                 />
@@ -128,12 +128,8 @@ export function StoryView() {
         <div className="fog-layer opacity-40" />
         <div className="mx-auto max-w-3xl text-center relative z-10">
           <Reveal>
-            <p className="font-mono text-[10px] uppercase tracking-luxe text-[oklch(0.82_0.11_80)] mb-6">
-              End of the story — for now
-            </p>
-            <p className="font-display text-3xl sm:text-4xl font-light text-foreground/90 italic leading-[1.4]">
-              “The story isn&apos;t ours to finish. We just kept the recording
-              running.”
+            <p className="font-mono text-[10px] uppercase tracking-luxe text-[oklch(0.52_0.24_12)] mb-6">
+              {t("story.end")}
             </p>
           </Reveal>
         </div>
@@ -149,6 +145,7 @@ function ChapterSection({
   chapter: (typeof chapters)[number];
   index: number;
 }) {
+  const { t } = useLocale();
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -195,8 +192,8 @@ function ChapterSection({
         {/* Text */}
         <div className={isEven ? "" : "lg:[direction:ltr]"}>
           <Reveal>
-            <p className="font-mono text-[10px] uppercase tracking-luxe text-[oklch(0.82_0.11_80)] mb-4">
-              Chapter {chapter.index} · {chapter.year}
+            <p className="font-mono text-[10px] uppercase tracking-luxe text-[oklch(0.52_0.24_12)] mb-4">
+              {t("story.chapterLabel", { index: chapter.index })}
             </p>
           </Reveal>
           <Reveal delay={0.05}>
@@ -204,11 +201,13 @@ function ChapterSection({
               {chapter.title}
             </h2>
           </Reveal>
-          <Reveal delay={0.1}>
-            <p className="font-display text-lg sm:text-xl text-muted-foreground italic mb-8">
-              {chapter.subtitle}
-            </p>
-          </Reveal>
+          {chapter.subtitle && (
+            <Reveal delay={0.1}>
+              <p className="font-display text-lg sm:text-xl text-muted-foreground italic mb-8">
+                {chapter.subtitle}
+              </p>
+            </Reveal>
+          )}
           <div className="space-y-5">
             {chapter.paragraphs.map((p, i) => (
               <Reveal key={i} delay={0.15 + i * 0.08}>
@@ -221,9 +220,9 @@ function ChapterSection({
 
           {chapter.pullQuote && (
             <Reveal delay={0.4}>
-              <div className="mt-10 pl-5 border-l-2 border-[oklch(0.82_0.11_80)]">
+              <div className="mt-10 pl-5 border-l-2 border-[oklch(0.52_0.24_12)]">
                 <p className="font-display text-xl sm:text-2xl font-light italic text-foreground/90 leading-relaxed">
-                  “{chapter.pullQuote}”
+                  &ldquo;{chapter.pullQuote}&rdquo;
                 </p>
               </div>
             </Reveal>
@@ -233,7 +232,7 @@ function ChapterSection({
             <Reveal delay={0.45}>
               <div className="mt-8 flex flex-wrap items-center gap-2">
                 <span className="font-mono text-[10px] uppercase tracking-cine text-muted-foreground">
-                  Featuring:
+                  {t("story.featuring")}
                 </span>
                 {chapter.collaborators.map((c) => (
                   <span

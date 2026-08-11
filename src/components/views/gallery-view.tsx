@@ -1,26 +1,20 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useMemo, useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   galleryImages,
-  galleryCategories,
-  type GalleryCategory,
   type GalleryImage,
 } from "@/lib/data/gallery";
 import { useAppStore } from "@/lib/store";
 import { Reveal } from "@/components/site/reveal";
-import { X, ChevronLeft, ChevronRight, ZoomIn, MapPin, Calendar } from "lucide-react";
+import { useLocale } from "@/lib/i18n";
+import { X, ChevronLeft, ChevronRight, ZoomIn, MapPin } from "lucide-react";
 
 export function GalleryView() {
-  const [filter, setFilter] = useState<GalleryCategory>("all");
+  const { t } = useLocale();
   const viewerImageId = useAppStore((s) => s.galleryViewerImage);
   const setViewerImageId = useAppStore((s) => s.setGalleryViewerImage);
-
-  const filtered = useMemo(() => {
-    if (filter === "all") return galleryImages;
-    return galleryImages.filter((g) => g.category.includes(filter));
-  }, [filter]);
 
   return (
     <div className="relative pt-24 sm:pt-28 pb-32">
@@ -31,9 +25,9 @@ export function GalleryView() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1 }}
-            className="font-mono text-[10px] uppercase tracking-luxe text-[oklch(0.82_0.11_80)] mb-5"
+            className="font-mono text-[10px] uppercase tracking-luxe text-[oklch(0.52_0.24_12)] mb-5"
           >
-            The Gallery
+            {t("gallery.label")}
           </motion.p>
           <motion.h1
             initial={{ opacity: 0, y: 30 }}
@@ -41,7 +35,7 @@ export function GalleryView() {
             transition={{ duration: 1.2, delay: 0.1 }}
             className="font-display text-5xl sm:text-7xl font-light text-foreground leading-[1] mb-6"
           >
-            An exhibition of memories
+            {t("gallery.title")}
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -49,50 +43,19 @@ export function GalleryView() {
             transition={{ duration: 1, delay: 0.3 }}
             className="max-w-2xl text-sm sm:text-base text-foreground/70 leading-relaxed"
           >
-            Photographs, archive stills, and album artwork arranged like a
-            museum. Every image carries a date, a place, and a story. Click to
-            enter the fullscreen viewer — use arrow keys to move through the
-            collection.
+            {t("gallery.subtitle")}
           </motion.p>
         </div>
       </section>
 
-      {/* Filters */}
-      <section className="px-5 sm:px-8 mb-10 sm:mb-14 sticky top-16 sm:top-20 z-30">
-        <div className="mx-auto max-w-7xl">
-          <div className="glass-strong rounded-full p-1.5 inline-flex flex-wrap gap-1 max-w-full overflow-x-auto">
-            {galleryCategories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setFilter(cat.id)}
-                className={`relative px-4 py-2 text-xs font-mono uppercase tracking-cine rounded-full transition-colors cursor-pointer whitespace-nowrap ${
-                  filter === cat.id
-                    ? "text-background"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {filter === cat.id && (
-                  <motion.span
-                    layoutId="gallery-filter"
-                    className="absolute inset-0 bg-foreground rounded-full"
-                    transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                  />
-                )}
-                <span className="relative z-10">{cat.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Masonry grid */}
+      {/* Masonry grid — all images, no filters */}
       <section className="px-5 sm:px-8">
         <div className="mx-auto max-w-7xl">
           <motion.div
             layout
             className="columns-1 sm:columns-2 lg:columns-3 gap-4 sm:gap-6 [column-fill:_balance]"
           >
-            {filtered.map((img, i) => (
+            {galleryImages.map((img, i) => (
               <GalleryCard
                 key={img.id}
                 img={img}
@@ -107,7 +70,7 @@ export function GalleryView() {
       {/* Fullscreen viewer */}
       <GalleryViewer
         key={viewerImageId || "none"}
-        images={filtered}
+        images={galleryImages}
         currentId={viewerImageId}
         onClose={() => setViewerImageId(null)}
         onNavigate={(id) => setViewerImageId(id)}
@@ -159,9 +122,6 @@ function GalleryCard({
             <ZoomIn className="w-3.5 h-3.5 text-foreground" />
           </div>
           <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-5 translate-y-2 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-500">
-            <p className="font-mono text-[9px] uppercase tracking-cine text-[oklch(0.82_0.11_80)] mb-1">
-              {img.date} · {img.location}
-            </p>
             <p className="text-xs text-foreground/80 line-clamp-2">{img.story}</p>
           </div>
         </div>
@@ -289,9 +249,6 @@ function GalleryViewer({
           >
             <div className="flex items-center justify-center gap-4 mb-4 flex-wrap">
               <span className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-cine text-muted-foreground">
-                <Calendar className="w-3 h-3" /> {current.date}
-              </span>
-              <span className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-cine text-muted-foreground">
                 <MapPin className="w-3 h-3" /> {current.location}
               </span>
             </div>
@@ -301,7 +258,7 @@ function GalleryViewer({
             <div className="flex items-center justify-center gap-3 flex-wrap">
               {current.relatedAlbum && (
                 <span className="px-3 py-1 text-xs glass rounded-full text-foreground/70">
-                  Album: {current.relatedAlbum}
+                  {t("gallery.album", { name: current.relatedAlbum ?? "" })}
                 </span>
               )}
               {current.relatedProject && (
@@ -311,7 +268,7 @@ function GalleryViewer({
               )}
               {current.photographer && (
                 <span className="font-mono text-[10px] uppercase tracking-cine text-muted-foreground/60">
-                  Photo: {current.photographer}
+                  {t("gallery.photo", { name: current.photographer ?? "" })}
                 </span>
               )}
             </div>

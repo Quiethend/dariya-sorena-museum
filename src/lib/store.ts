@@ -4,9 +4,9 @@ export type ViewId =
   | "home"
   | "story"
   | "gallery"
-  | "albums"
-  | "timeline"
-  | "videos";
+  | "albums";
+
+export type Locale = "en" | "fa";
 
 export type AlbumDetailId =
   | null
@@ -20,13 +20,9 @@ export type GalleryViewerImageId = string | null;
 export type ChapterId =
   | null
   | "beginning"
-  | "early-years"
-  | "building-sound"
   | "fight-club"
+  | "saamet"
   | "royal-band"
-  | "live"
-  | "film-tv"
-  | "new-chapter"
   | "future";
 
 export interface AppState {
@@ -64,6 +60,10 @@ export interface AppState {
   setSearchOpen: (v: boolean) => void;
   searchQuery: string;
   setSearchQuery: (v: string) => void;
+
+  // Locale
+  locale: Locale;
+  setLocale: (v: Locale) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -108,4 +108,8 @@ export const useAppStore = create<AppState>((set) => ({
   setSearchOpen: (v) => set({ searchOpen: v }),
   searchQuery: "",
   setSearchQuery: (v) => set({ searchQuery: v }),
+
+  // Locale
+  locale: "en",
+  setLocale: (v) => set({ locale: v }),
 }));

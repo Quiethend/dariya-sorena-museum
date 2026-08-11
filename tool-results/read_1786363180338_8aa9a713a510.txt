@@ -1,0 +1,622 @@
+     1→"use client";
+     2→
+     3→import { motion, AnimatePresence } from "framer-motion";
+     4→import { useAppStore } from "@/lib/store";
+     5→import {
+     6→  Play,
+     7→  Pause,
+     8→  SkipForward,
+     9→  SkipBack,
+    10→  X,
+    11→  ChevronUp,
+    12→  ChevronDown,
+    13→  Volume2,
+    14→  Volume1,
+    15→  VolumeX,
+    16→  Shuffle,
+    17→  Repeat,
+    18→} from "lucide-react";
+    19→import { useEffect, useRef, useState, useCallback } from "react";
+    20→import { useLocale } from "@/lib/i18n";
+    21→
+    22→// Real Spotify preview URLs — fetched from artist embed
+    23→const TRACKS: Track[] = [
+    24→  {
+    25→    id: "87878b4d379b735a667b",
+    26→    title: "Edame Midam",
+    27→    album: "Dariya & Sorena",
+    28→    cover: "/images/edame-midam-cover.jpg",
+    29→    preview: "https://p.scdn.co/mp3-preview/4e0272122bbc00d82513156628839799036aaf13",
+    30→  },
+    31→  {
+    32→    id: "4c605b6da6a9a33751e0",
+    33→    title: "Afkare Man",
+    34→    album: "2025 · Dariya & Sorena",
+    35→    cover: "/images/edame-midam-cover.jpg",
+    36→    preview: "https://p.scdn.co/mp3-preview/e497e8b1ffe78e3166465e12d91c9aa81c5b806f",
+    37→  },
+    38→];
+    39→
+    40→type RepeatMode = "off" | "all" | "one";
+    41→
+    42→function VolumeIcon({ vol, muted }: { vol: number; muted: boolean }) {
+    43→  if (muted || vol === 0) return <VolumeX className="w-4 h-4" />;
+    44→  if (vol < 40) return <Volume1 className="w-4 h-4" />;
+    45→  return <Volume2 className="w-4 h-4" />;
+    46→}
+    47→
+    48→export function MusicPlayer() {
+    49→  const { t } = useLocale();
+    50→  const showMusicPlayer = useAppStore((s) => s.showMusicPlayer);
+    51→  const setShowMusicPlayer = useAppStore((s) => s.setShowMusicPlayer);
+    52→  const currentTrackTitle = useAppStore((s) => s.currentTrackTitle);
+    53→  const setCurrentTrackTitle = useAppStore((s) => s.setCurrentTrackTitle);
+    54→  const currentAlbumCover = useAppStore((s) => s.currentAlbumCover);
+    55→  const setCurrentAlbumCover = useAppStore((s) => s.setCurrentAlbumCover);
+    56→  const isMusicPlaying = useAppStore((s) => s.isMusicPlaying);
+    57→  const setIsMusicPlaying = useAppStore((s) => s.setIsMusicPlaying);
+    58→
+    59→  const [expanded, setExpanded] = useState(false);
+    60→  const [trackIdx, setTrackIdx] = useState(0);
+    61→  const [progress, setProgress] = useState(0);
+    62→  const [duration, setDuration] = useState(0);
+    63→  const [muted, setMuted] = useState(false);
+    64→  const [vol, setVol] = useState(80);
+    65→  const [shuffle, setShuffle] = useState(false);
+    66→  const [repeatMode, setRepeatMode] = useState<RepeatMode>("off");
+    67→  const [showVolSlider, setShowVolSlider] = useState(false);
+    68→
+    69→  const audioRef = useRef<HTMLAudioElement>(null);
+    70→  const rafRef = useRef<number>(0);
+    71→  const handleEndedRef = useRef<() => void>(() => {});
+    72→  const volSliderRef = useRef<HTMLDivElement>(null);
+    73→  // Keep a ref to isMusicPlaying so track-loading effect can read it
+    74→  // without subscribing to it in the dependency array
+    75→  const isPlayingRef = useRef(isMusicPlaying);
+    76→  isPlayingRef.current = isMusicPlaying;
+    77→  // Track previous showMusicPlayer to detect open/close transitions
+    78→  const prevShowRef = useRef(showMusicPlayer);
+    79→
+    80→  const current = TRACKS[trackIdx];
+    81→
+    82→  // Stable ended handler
+    83→  const getNextIndex = useCallback(
+    84→    (currentIdx: number) => {
+    85→      if (repeatMode === "one") return currentIdx;
+    86→      if (shuffle) {
+    87→        let next = currentIdx;
+    88→        while (next === currentIdx && TRACKS.length > 1) {
+    89→          next = Math.floor(Math.random() * TRACKS.length);
+    90→        }
+    91→        return next;
+    92→      }
+    93→      return (currentIdx + 1) % TRACKS.length;
+    94→    },
+    95→    [repeatMode, shuffle]
+    96→  );
+    97→
+    98→  useEffect(() => {
+    99→    handleEndedRef.current = () => {
+   100→      const nextIdx = getNextIndex(trackIdx);
+   101→      if (repeatMode === "off" && nextIdx === 0 && !shuffle && trackIdx === TRACKS.length - 1) {
+   102→        setIsMusicPlaying(false);
+   103→        setProgress(0);
+   104→        return;
+   105→      }
+   106→      setTrackIdx(nextIdx);
+   107→      setProgress(0);
+   108→    };
+   109→  }, [getNextIndex, trackIdx, repeatMode, shuffle, setIsMusicPlaying]);
+   110→
+   111→  // Sync store with local track
+   112→  useEffect(() => {
+   113→    setCurrentTrackTitle(current.title);
+   114→    setCurrentAlbumCover(current.cover);
+   115→  }, [trackIdx, current.title, current.cover, setCurrentTrackTitle, setCurrentAlbumCover]);
+   116→
+   117→  // Load audio source ONLY when track changes.
+   118→  // Do NOT depend on isMusicPlaying — that caused pause to reload audio.
+   119→  useEffect(() => {
+   120→    const audio = audioRef.current;
+   121→    if (!audio) return;
+   122→    audio.src = TRACKS[trackIdx].preview;
+   123→    audio.load();
+   124→    // Use the ref to check if we should resume playing after track change
+   125→    if (isPlayingRef.current) {
+   126→      audio.play().catch(() => {});
+   127→    }
+   128→  }, [trackIdx]);
+   129→
+   130→  // Play/pause sync
+   131→  useEffect(() => {
+   132→    const audio = audioRef.current;
+   133→    if (!audio) return;
+   134→    if (isMusicPlaying) {
+   135→      audio.play().catch(() => {});
+   136→    } else {
+   137→      audio.pause();
+   138→    }
+   139→  }, [isMusicPlaying]);
+   140→
+   141→  // Volume sync
+   142→  useEffect(() => {
+   143→    const audio = audioRef.current;
+   144→    if (!audio) return;
+   145→    audio.volume = muted ? 0 : vol / 100;
+   146→  }, [vol, muted]);
+   147→
+   148→  // Progress ticker
+   149→  useEffect(() => {
+   150→    const audio = audioRef.current;
+   151→    if (!audio || !isMusicPlaying) return;
+   152→    const tick = () => {
+   153→      setProgress(audio.currentTime);
+   154→      rafRef.current = requestAnimationFrame(tick);
+   155→    };
+   156→    rafRef.current = requestAnimationFrame(tick);
+   157→    return () => cancelAnimationFrame(rafRef.current);
+   158→  }, [isMusicPlaying, trackIdx]);
+   159→
+   160→  // Auto-play ONLY when player transitions from closed → open.
+   161→  // Do NOT react to isMusicPlaying changes — that caused manual pause to undo itself.
+   162→  useEffect(() => {
+   163→    if (showMusicPlayer && !prevShowRef.current) {
+   164→      // Player just opened — start playing
+   165→      const audio = audioRef.current;
+   166→      if (audio && audio.src) {
+   167→        audio.play().catch(() => {});
+   168→        setIsMusicPlaying(true);
+   169→      }
+   170→    }
+   171→    prevShowRef.current = showMusicPlayer;
+   172→  }, [showMusicPlayer, setIsMusicPlaying]);
+   173→
+   174→  // Close volume slider when clicking outside
+   175→  useEffect(() => {
+   176→    if (!showVolSlider) return;
+   177→    const handler = (e: MouseEvent) => {
+   178→      if (volSliderRef.current && !volSliderRef.current.contains(e.target as Node)) {
+   179→        setShowVolSlider(false);
+   180→      }
+   181→    };
+   182→    document.addEventListener("mousedown", handler);
+   183→    return () => document.removeEventListener("mousedown", handler);
+   184→  }, [showVolSlider]);
+   185→
+   186→  const handlePlayPause = useCallback(() => {
+   187→    if (!showMusicPlayer) {
+   188→      setShowMusicPlayer(true);
+   189→      return;
+   190→    }
+   191→    setIsMusicPlaying(!isMusicPlaying);
+   192→  }, [showMusicPlayer, setShowMusicPlayer, isMusicPlaying, setIsMusicPlaying]);
+   193→
+   194→  const nextTrack = useCallback(() => {
+   195→    const nextIdx = getNextIndex(trackIdx);
+   196→    setTrackIdx(nextIdx);
+   197→    setProgress(0);
+   198→  }, [trackIdx, getNextIndex]);
+   199→
+   200→  const prevTrack = useCallback(() => {
+   201→    const audio = audioRef.current;
+   202→    if (audio && audio.currentTime > 3) {
+   203→      audio.currentTime = 0;
+   204→      setProgress(0);
+   205→      return;
+   206→    }
+   207→    const prevIdx = (trackIdx - 1 + TRACKS.length) % TRACKS.length;
+   208→    setTrackIdx(prevIdx);
+   209→    setProgress(0);
+   210→  }, [trackIdx]);
+   211→
+   212→  const seek = (val: number) => {
+   213→    const audio = audioRef.current;
+   214→    if (audio) audio.currentTime = val;
+   215→    setProgress(val);
+   216→  };
+   217→
+   218→  const toggleMute = () => {
+   219→    if (muted) {
+   220→      setMuted(false);
+   221→      if (vol === 0) setVol(80);
+   222→    } else {
+   223→      setMuted(true);
+   224→    }
+   225→  };
+   226→
+   227→  const fmt = (s: number) => {
+   228→    if (!s || isNaN(s)) return "0:00";
+   229→    const m = Math.floor(s / 60);
+   230→    const sec = Math.floor(s % 60);
+   231→    return `${m}:${sec.toString().padStart(2, "0")}`;
+   232→  };
+   233→
+   234→  const cycleRepeat = () => {
+   235→    setRepeatMode((m) => (m === "off" ? "all" : m === "all" ? "one" : "off"));
+   236→  };
+   237→
+   238→  const cover = currentAlbumCover || current.cover;
+   239→  const title = currentTrackTitle || current.title;
+   240→
+   241→  return (
+   242→    <>
+   243→      <audio
+   244→        ref={audioRef}
+   245→        preload="auto"
+   246→        onEnded={() => handleEndedRef.current()}
+   247→        onLoadedMetadata={(e) => setDuration((e.target as HTMLAudioElement).duration)}
+   248→        onTimeUpdate={(e) => setProgress((e.target as HTMLAudioElement).currentTime)}
+   249→      />
+   250→
+   251→      <AnimatePresence>
+   252→        {showMusicPlayer && (
+   253→          <>
+   254→            {/* Mini player */}
+   255→            <motion.div
+   256→              initial={{ y: 100, opacity: 0 }}
+   257→              animate={{ y: 0, opacity: 1 }}
+   258→              exit={{ y: 100, opacity: 0 }}
+   259→              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+   260→              className="fixed bottom-0 left-0 right-0 z-[90] px-3 sm:px-5 pb-3 sm:pb-5"
+   261→            >
+   262→              <div className="mx-auto max-w-5xl glass-strong rounded-2xl overflow-hidden shadow-2xl">
+   263→                {/* Progress line (top, thin) */}
+   264→                <div className="relative h-1 bg-foreground/8 cursor-pointer group">
+   265→                  <div
+   266→                    className="absolute inset-y-0 left-0 bg-gradient-to-r from-[oklch(0.52_0.24_12)] to-[oklch(0.35_0.18_6)]"
+   267→                    style={{ width: `${duration ? (progress / duration) * 100 : 0}%` }}
+   268→                  />
+   269→                  <input
+   270→                    type="range"
+   271→                    min={0}
+   272→                    max={duration || 0}
+   273→                    value={progress}
+   274→                    onChange={(e) => seek(Number(e.target.value))}
+   275→                    className="absolute inset-0 w-full opacity-0 cursor-pointer"
+   276→                    aria-label="Seek"
+   277→                  />
+   278→                </div>
+   279→
+   280→                <div className="flex items-center gap-3 sm:gap-4 px-3 sm:px-5 py-3">
+   281→                  {/* Album art */}
+   282→                  <button
+   283→                    onClick={() => setExpanded(true)}
+   284→                    className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer group"
+   285→                    aria-label="Expand player"
+   286→                  >
+   287→                    <img
+   288→                      src={cover}
+   289→                      alt={title}
+   290→                      className={`w-full h-full object-cover transition-transform ${
+   291→                        isMusicPlaying ? "scale-105" : "scale-100"
+   292→                      }`}
+   293→                    />
+   294→                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+   295→                      <ChevronUp className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+   296→                    </div>
+   297→                  </button>
+   298→
+   299→                  {/* Track info */}
+   300→                  <div className="flex-1 min-w-0">
+   301→                    <div className="flex items-center gap-2">
+   302→                      <p className="text-sm text-foreground truncate font-medium">
+   303→                        {title}
+   304→                      </p>
+   305→                      {isMusicPlaying && (
+   306→                        <div className="flex items-end gap-0.5 h-3 flex-shrink-0">
+   307→                          {[0, 1, 2, 3].map((i) => (
+   308→                            <span
+   309→                              key={i}
+   310→                              className="eq-bar"
+   311→                              style={{ animationDelay: `${i * 0.15}s` }}
+   312→                            />
+   313→                          ))}
+   314→                        </div>
+   315→                      )}
+   316→                    </div>
+   317→                    <p className="text-xs text-muted-foreground truncate font-mono">
+   318→                      {current.album}
+   319→                    </p>
+   320→                  </div>
+   321→
+   322→                  {/* Controls */}
+   323→                  <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+   324→                    <button
+   325→                      onClick={prevTrack}
+   326→                      className="p-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer hidden sm:block"
+   327→                      aria-label="Previous"
+   328→                    >
+   329→                      <SkipBack className="w-4 h-4" />
+   330→                    </button>
+   331→                    <button
+   332→                      onClick={handlePlayPause}
+   333→                      className="w-10 h-10 rounded-full bg-foreground text-background flex items-center justify-center hover:scale-105 transition-transform cursor-pointer"
+   334→                      aria-label={isMusicPlaying ? "Pause" : "Play"}
+   335→                    >
+   336→                      {isMusicPlaying ? (
+   337→                        <Pause className="w-4 h-4" />
+   338→                      ) : (
+   339→                        <Play className="w-4 h-4 ml-0.5" />
+   340→                      )}
+   341→                    </button>
+   342→                    <button
+   343→                      onClick={nextTrack}
+   344→                      className="p-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer hidden sm:block"
+   345→                      aria-label="Next"
+   346→                    >
+   347→                      <SkipForward className="w-4 h-4" />
+   348→                    </button>
+   349→                  </div>
+   350→
+   351→                  {/* Mute + Time + Close */}
+   352→                  <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+   353→                    {/* Mute button — always visible */}
+   354→                    <button
+   355→                      onClick={toggleMute}
+   356→                      className={`p-2 transition-colors cursor-pointer ${
+   357→                        muted || vol === 0
+   358→                          ? "text-[oklch(0.52_0.24_12)]"
+   359→                          : "text-muted-foreground hover:text-foreground"
+   360→                      }`}
+   361→                      aria-label={muted || vol === 0 ? "Unmute" : "Mute"}
+   362→                    >
+   363→                      <VolumeIcon vol={vol} muted={muted} />
+   364→                    </button>
+   365→
+   366→                    {/* Volume slider + time — desktop only */}
+   367→                    <div ref={volSliderRef} className="hidden lg:flex items-center">
+   368→                      <AnimatePresence>
+   369→                        {showVolSlider && (
+   370→                          <motion.div
+   371→                            initial={{ opacity: 0, width: 0, marginLeft: 0 }}
+   372→                            animate={{ opacity: 1, width: "auto", marginLeft: 0 }}
+   373→                            exit={{ opacity: 0, width: 0 }}
+   374→                            transition={{ duration: 0.2 }}
+   375→                            onMouseLeave={() => setShowVolSlider(false)}
+   376→                            onMouseEnter={() => setShowVolSlider(true)}
+   377→                            className="overflow-hidden flex items-center"
+   378→                          >
+   379→                            <input
+   380→                              type="range"
+   381→                              min={0}
+   382→                              max={100}
+   383→                              value={muted ? 0 : vol}
+   384→                              onChange={(e) => {
+   385→                                setVol(Number(e.target.value));
+   386→                                setMuted(false);
+   387→                              }}
+   388→                              className="w-20 accent-[oklch(0.52_0.24_12)] cursor-pointer"
+   389→                              aria-label="Volume"
+   390→                            />
+   391→                            <span className="font-mono text-[10px] text-muted-foreground/60 ml-2 w-7 text-right tabular-nums">
+   392→                              {muted ? 0 : vol}%
+   393→                            </span>
+   394→                          </motion.div>
+   395→                        )}
+   396→                      </AnimatePresence>
+   397→                    </div>
+   398→
+   399→                    {/* Time — desktop only */}
+   400→                    <span className="hidden lg:inline font-mono text-[10px] text-muted-foreground tabular-nums">
+   401→                      {fmt(progress)} / {fmt(duration)}
+   402→                    </span>
+   403→
+   404→                    {/* Close button — always visible */}
+   405→                    <button
+   406→                      onClick={() => {
+   407→                        const audio = audioRef.current;
+   408→                        if (audio) audio.pause();
+   409→                        setShowMusicPlayer(false);
+   410→                        setIsMusicPlaying(false);
+   411→                      }}
+   412→                      className="p-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+   413→                      aria-label="Close player"
+   414→                    >
+   415→                      <X className="w-4 h-4" />
+   416→                    </button>
+   417→                  </div>
+   418→                </div>
+   419→              </div>
+   420→            </motion.div>
+   421→
+   422→            {/* Fullscreen / expanded player */}
+   423→            <AnimatePresence>
+   424→              {expanded && (
+   425→                <motion.div
+   426→                  key={`expanded-${trackIdx}-${cover}`}
+   427→                  initial={{ opacity: 0 }}
+   428→                  animate={{ opacity: 1 }}
+   429→                  exit={{ opacity: 0 }}
+   430→                  transition={{ duration: 0.4 }}
+   431→                  className="fixed inset-0 z-[140] flex flex-col"
+   432→                >
+   433→                  {/* Backdrop */}
+   434→                  <div className="absolute inset-0 bg-background/95 backdrop-blur-2xl" />
+   435→                  <div
+   436→                    className="absolute inset-0 opacity-30"
+   437→                    style={{
+   438→                      backgroundImage: `url(${cover})`,
+   439→                      backgroundSize: "cover",
+   440→                      backgroundPosition: "center",
+   441→                      filter: "blur(60px) saturate(140%)",
+   442→                    }}
+   443→                  />
+   444→                  <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/80 to-background" />
+   445→
+   446→                  {/* Close button — absolute, z-[200], stopPropagation */}
+   447→                  <button
+   448→                    onClick={(e) => {
+   449→                      e.stopPropagation();
+   450→                      setExpanded(false);
+   451→                    }}
+   452→                    className="absolute top-5 right-5 z-[200] p-2 glass rounded-full text-foreground hover:scale-105 transition-transform cursor-pointer"
+   453→                    aria-label="Collapse player"
+   454→                  >
+   455→                    <ChevronDown className="w-5 h-5" />
+   456→                  </button>
+   457→
+   458→                  <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 py-12 overflow-y-auto">
+   459→                    {/* Cover art */}
+   460→                    <motion.div
+   461→                      key={cover}
+   462→                      initial={{ scale: 0.9, opacity: 0 }}
+   463→                      animate={{ scale: 1, opacity: 1 }}
+   464→                      transition={{ delay: 0.1, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+   465→                      className="w-64 h-64 sm:w-80 sm:h-80 rounded-2xl overflow-hidden shadow-2xl mb-10"
+   466→                    >
+   467→                      <img
+   468→                        src={cover}
+   469→                        alt={title}
+   470→                        className="w-full h-full object-cover"
+   471→                      />
+   472→                    </motion.div>
+   473→
+   474→                    {/* Track info */}
+   475→                    <motion.div
+   476→                      initial={{ y: 20, opacity: 0 }}
+   477→                      animate={{ y: 0, opacity: 1 }}
+   478→                      transition={{ delay: 0.2, duration: 0.6 }}
+   479→                      className="text-center max-w-2xl"
+   480→                    >
+   481→                      <p className="font-mono text-[10px] uppercase tracking-luxe text-[oklch(0.52_0.24_12)] mb-3">
+   482→                        {t("player.nowPlaying")}
+   483→                      </p>
+   484→                      <h2 className="font-display text-4xl sm:text-5xl font-light text-foreground">
+   485→                        {title}
+   486→                      </h2>
+   487→                      <p className="mt-3 text-sm text-muted-foreground font-mono">
+   488→                        {current.album}
+   489→                      </p>
+   490→                    </motion.div>
+   491→
+   492→                    {/* Seek bar */}
+   493→                    <div className="mt-8 w-full max-w-md">
+   494→                      <div className="relative h-1 bg-foreground/10 rounded-full">
+   495→                        <div
+   496→                          className="absolute inset-y-0 left-0 bg-gradient-to-r from-[oklch(0.52_0.24_12)] to-[oklch(0.35_0.18_6)] rounded-full"
+   497→                          style={{ width: `${duration ? (progress / duration) * 100 : 0}%` }}
+   498→                        />
+   499→                        <input
+   500→                          type="range"
+   501→                          min={0}
+   502→                          max={duration || 0}
+   503→                          value={progress}
+   504→                          onChange={(e) => seek(Number(e.target.value))}
+   505→                          className="absolute inset-0 w-full opacity-0 cursor-pointer"
+   506→                          aria-label="Seek"
+   507→                        />
+   508→                      </div>
+   509→                      <div className="flex justify-between mt-2 font-mono text-[10px] text-muted-foreground">
+   510→                        <span>{fmt(progress)}</span>
+   511→                        <span>{fmt(duration)}</span>
+   512→                      </div>
+   513→                    </div>
+   514→
+   515→                    {/* Controls: Shuffle, Prev, Play, Next, Repeat */}
+   516→                    <div className="mt-8 flex items-center gap-5">
+   517→                      <button
+   518→                        onClick={() => setShuffle(!shuffle)}
+   519→                        className={`p-2 transition-colors cursor-pointer ${
+   520→                          shuffle
+   521→                            ? "text-[oklch(0.52_0.24_12)]"
+   522→                            : "text-muted-foreground hover:text-foreground"
+   523→                        }`}
+   524→                        aria-label="Shuffle"
+   525→                      >
+   526→                        <Shuffle className="w-5 h-5" />
+   527→                      </button>
+   528→                      <button
+   529→                        onClick={prevTrack}
+   530→                        className="p-3 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+   531→                        aria-label="Previous"
+   532→                      >
+   533→                        <SkipBack className="w-6 h-6" />
+   534→                      </button>
+   535→                      <button
+   536→                        onClick={handlePlayPause}
+   537→                        className="w-16 h-16 rounded-full bg-foreground text-background flex items-center justify-center hover:scale-105 transition-transform cursor-pointer"
+   538→                        aria-label={isMusicPlaying ? "Pause" : "Play"}
+   539→                      >
+   540→                        {isMusicPlaying ? (
+   541→                          <Pause className="w-7 h-7" />
+   542→                        ) : (
+   543→                          <Play className="w-7 h-7 ml-1" />
+   544→                        )}
+   545→                      </button>
+   546→                      <button
+   547→                        onClick={nextTrack}
+   548→                        className="p-3 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+   549→                        aria-label="Next"
+   550→                      >
+   551→                        <SkipForward className="w-6 h-6" />
+   552→                      </button>
+   553→                      <button
+   554→                        onClick={cycleRepeat}
+   555→                        className={`p-2 transition-colors cursor-pointer relative ${
+   556→                          repeatMode !== "off"
+   557→                            ? "text-[oklch(0.52_0.24_12)]"
+   558→                            : "text-muted-foreground hover:text-foreground"
+   559→                        }`}
+   560→                        aria-label="Repeat"
+   561→                      >
+   562→                        <Repeat className="w-5 h-5" />
+   563→                        {repeatMode === "one" && (
+   564→                          <span className="absolute -top-0.5 -right-0.5 text-[8px] font-bold text-[oklch(0.52_0.24_12)]">
+   565→                            1
+   566→                          </span>
+   567→                        )}
+   568→                      </button>
+   569→                    </div>
+   570→
+   571→                    {/* Volume */}
+   572→                    <div className="mt-10 flex items-center gap-4 w-full max-w-sm">
+   573→                      <button
+   574→                        onClick={toggleMute}
+   575→                        className={`p-2 rounded-full transition-all duration-200 cursor-pointer ${
+   576→                          muted || vol === 0
+   577→                            ? "text-[oklch(0.52_0.24_12)] glass"
+   578→                            : "text-muted-foreground hover:text-foreground hover:glass"
+   579→                        }`}
+   580→                        aria-label={muted || vol === 0 ? "Unmute" : "Mute"}
+   581→                      >
+   582→                        <VolumeIcon vol={vol} muted={muted} />
+   583→                      </button>
+   584→                      <div className="relative flex-1 h-1.5 bg-foreground/10 rounded-full group cursor-pointer">
+   585→                        {/* Volume fill */}
+   586→                        <div
+   587→                          className="absolute inset-y-0 left-0 bg-gradient-to-r from-[oklch(0.52_0.24_12)] to-[oklch(0.40_0.18_6)] rounded-full transition-all duration-100"
+   588→                          style={{ width: `${muted ? 0 : vol}%` }}
+   589→                        />
+   590→                        {/* Thumb indicator */}
+   591→                        <div
+   592→                          className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-[oklch(0.52_0.24_12)] shadow-[0_0_6px_oklch(0.52_0.24_12/60%)] opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+   593→                          style={{ left: `calc(${muted ? 0 : vol}% - 6px)` }}
+   594→                        />
+   595→                        <input
+   596→                          type="range"
+   597→                          min={0}
+   598→                          max={100}
+   599→                          value={muted ? 0 : vol}
+   600→                          onChange={(e) => {
+   601→                            setVol(Number(e.target.value));
+   602→                            setMuted(false);
+   603→                          }}
+   604→                          className="absolute inset-0 w-full opacity-0 cursor-pointer"
+   605→                          aria-label="Volume"
+   606→                        />
+   607→                      </div>
+   608→                      <span className="font-mono text-[11px] text-muted-foreground/70 tabular-nums w-8 text-right">
+   609→                        {muted ? 0 : vol}%
+   610→                      </span>
+   611→                    </div>
+   612→                  </div>
+   613→                </motion.div>
+   614→              )}
+   615→            </AnimatePresence>
+   616→          </>
+   617→        )}
+   618→      </AnimatePresence>
+   619→    </>
+   620→  );
+   621→}
+   622→

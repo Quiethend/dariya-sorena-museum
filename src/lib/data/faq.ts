@@ -52,7 +52,7 @@ export const faqs: FAQ[] = [
   {
     question: "What is the purpose of this website?",
     answer:
-      "This website serves as the definitive interactive digital museum and archive for Dariya & Sorena. It houses their story, discography, gallery, timeline, video library, and other archival materials — celebrating their legacy and contribution to Persian hip-hop.",
+      "This is the official website of Dariya & Sorena. It features their biography, discography, gallery, timeline, video library, and more — celebrating their legacy and contribution to Persian hip-hop.",
   },
 ];
 

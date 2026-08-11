@@ -4,13 +4,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/lib/store";
 import { albums } from "@/lib/data/albums";
 import { chapters } from "@/lib/data/story";
-import { videos } from "@/lib/data/videos";
 import { galleryImages } from "@/lib/data/gallery";
 import { Search as SearchIcon, X } from "lucide-react";
+import { useLocale } from "@/lib/i18n";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 interface SearchResult {
-  type: "album" | "chapter" | "video" | "gallery";
+  type: "album" | "chapter" | "gallery";
   title: string;
   subtitle: string;
   image?: string;
@@ -18,6 +18,7 @@ interface SearchResult {
 }
 
 export function GlobalSearch() {
+  const { t } = useLocale();
   const open = useAppStore((s) => s.searchOpen);
   const setOpen = useAppStore((s) => s.setSearchOpen);
   const query = useAppStore((s) => s.searchQuery);
@@ -62,7 +63,7 @@ export function GlobalSearch() {
         out.push({
           type: "album",
           title: a.title,
-          subtitle: `Album · ${a.year}`,
+          subtitle: `${t("search.album")} · ${a.year}`,
           image: a.cover,
           action: () => {
             setView("albums");
@@ -72,12 +73,12 @@ export function GlobalSearch() {
           },
         });
       }
-      a.tracks.forEach((t) => {
-        if (t.title.toLowerCase().includes(q)) {
+      a.tracks.forEach((track) => {
+        if (track.title.toLowerCase().includes(q)) {
           out.push({
             type: "album",
-            title: t.title,
-            subtitle: `Track · ${a.title} (${a.year})`,
+            title: track.title,
+            subtitle: `${t("search.track")} · ${a.title} (${a.year})`,
             image: a.cover,
             action: () => {
               setView("albums");
@@ -93,36 +94,15 @@ export function GlobalSearch() {
     chapters.forEach((c) => {
       if (
         c.title.toLowerCase().includes(q) ||
-        c.subtitle.toLowerCase().includes(q) ||
-        c.year.toLowerCase().includes(q)
+        c.subtitle.toLowerCase().includes(q)
       ) {
         out.push({
           type: "chapter",
           title: c.title,
-          subtitle: `Story · ${c.year}`,
+          subtitle: t("search.chapter"),
           image: c.image,
           action: () => {
             setView("story");
-            setOpen(false);
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          },
-        });
-      }
-    });
-
-    videos.forEach((v) => {
-      if (
-        v.title.toLowerCase().includes(q) ||
-        v.subtitle?.toLowerCase().includes(q) ||
-        v.year.includes(q)
-      ) {
-        out.push({
-          type: "video",
-          title: v.title,
-          subtitle: `Video · ${v.year}`,
-          image: v.thumbnail,
-          action: () => {
-            setView("videos");
             setOpen(false);
             window.scrollTo({ top: 0, behavior: "smooth" });
           },
@@ -140,7 +120,7 @@ export function GlobalSearch() {
         out.push({
           type: "gallery",
           title: g.alt,
-          subtitle: `Gallery · ${g.date} · ${g.location}`,
+          subtitle: `${t("search.gallery")} · ${g.location}`,
           image: g.src,
           action: () => {
             setView("gallery");
@@ -153,7 +133,7 @@ export function GlobalSearch() {
     });
 
     return out.slice(0, 20);
-  }, [local, setView, setAlbumDetail, setGalleryViewerImage, setOpen]);
+  }, [local, t, setView, setAlbumDetail, setGalleryViewerImage, setOpen]);
 
   const setLocalQuery = (v: string) => {
     setLocal(v);
@@ -188,7 +168,7 @@ export function GlobalSearch() {
                 id="global-search-input"
                 value={local}
                 onChange={(e) => setLocalQuery(e.target.value)}
-                placeholder="Search albums, songs, chapters, videos, gallery…"
+                placeholder={t("search.placeholder")}
                 className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground/60 outline-none text-sm"
               />
               <button
@@ -204,18 +184,17 @@ export function GlobalSearch() {
               {local.trim() === "" ? (
                 <div className="p-8 text-center">
                   <p className="font-mono text-[10px] uppercase tracking-luxe text-muted-foreground/60">
-                    Search the archive
+                    {t("search.heading")}
                   </p>
                   <p className="mt-3 text-sm text-muted-foreground">
-                    Find albums, tracks, story chapters, videos, and gallery
-                    images.
+                    {t("search.hint")}
                   </p>
                 </div>
               ) : results.length === 0 ? (
                 <div className="p-8 text-center">
                   <p className="text-sm text-muted-foreground">
-                    No results for{" "}
-                    <span className="text-foreground">“{local}”</span>
+                    {t("search.noResults")}{" "}
+                    <span className="text-foreground">&ldquo;{local}&rdquo;</span>
                   </p>
                 </div>
               ) : (

@@ -20,12 +20,12 @@ export function TimelineView() {
   }, []);
 
   const typeColors: Record<string, string> = {
-    milestone: "oklch(0.82 0.11 80)",
-    album: "oklch(0.75 0.15 75)",
+    milestone: "oklch(0.52 0.24 12)",
+    album: "oklch(0.52 0.24 12)",
     concert: "oklch(0.65 0.12 30)",
     film: "oklch(0.55 0.12 270)",
     return: "oklch(0.70 0.10 150)",
-    future: "oklch(0.82 0.08 55)",
+    future: "oklch(0.50 0.15 25)",
   };
 
   return (
@@ -37,7 +37,7 @@ export function TimelineView() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1 }}
-            className="font-mono text-[10px] uppercase tracking-luxe text-[oklch(0.82_0.11_80)] mb-5"
+            className="font-mono text-[10px] uppercase tracking-luxe text-[oklch(0.52_0.24_12)] mb-5"
           >
             The Timeline
           </motion.p>
@@ -56,7 +56,7 @@ export function TimelineView() {
             className="text-sm sm:text-base text-foreground/70 leading-relaxed max-w-2xl mx-auto"
           >
             An elegant chronicle of the moments that shaped a career — from the
-            first recording to the future of the archive.
+            first recording to what comes next.
           </motion.p>
         </div>
       </section>
@@ -71,7 +71,7 @@ export function TimelineView() {
             {timelineEvents.map((event, idx) => {
               const isLeft = idx % 2 === 0;
               const isActive = expanded === event.id;
-              const color = typeColors[event.type] || "oklch(0.82 0.11 80)";
+              const color = typeColors[event.type] || "oklch(0.52 0.24 12)";
 
               return (
                 <Reveal key={event.id} delay={idx * 0.04} y={30}>
@@ -163,7 +163,7 @@ export function TimelineView() {
                                 {event.image && (
                                   <div className="mt-4 flex items-center gap-2 text-[10px] font-mono uppercase tracking-cine text-muted-foreground/60">
                                     <MapPin className="w-3 h-3" />
-                                    Archive image
+                                    Photo
                                   </div>
                                 )}
                               </div>
