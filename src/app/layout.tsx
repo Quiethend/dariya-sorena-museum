@@ -54,8 +54,10 @@ export const metadata: Metadata = {
     canonical: SITE_URL,
   },
   icons: {
-    icon: "/dariya-sorena-logo.png",
-    apple: "/dariya-sorena-logo.png",
+    icon: [
+      { url: "/icon.png", sizes: "718x695", type: "image/png" },
+    ],
+    apple: "/apple-icon.png",
   },
   openGraph: {
     title: "Dariya & Sorena — Official Website",
@@ -117,7 +119,7 @@ export default function RootLayout({
               "@type": "MusicGroup",
               name: "Dariya & Sorena",
               url: SITE_URL,
-              logo: `${SITE_URL}/logo.svg`,
+              logo: `${SITE_URL}/dariya-sorena-logo.png`,
               description:
                 "One of the earliest Persian hip-hop duos, formed in Tehran in 2003.",
               genre: "Persian Hip-Hop",
