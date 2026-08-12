@@ -54,8 +54,8 @@ export const metadata: Metadata = {
     canonical: SITE_URL,
   },
   icons: {
-    icon: "/logo.svg",
-    apple: "/logo.svg",
+    icon: "/dariya-sorena-logo.png",
+    apple: "/dariya-sorena-logo.png",
   },
   openGraph: {
     title: "Dariya & Sorena — Official Website",
