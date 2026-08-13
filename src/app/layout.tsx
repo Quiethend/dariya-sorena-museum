@@ -67,9 +67,9 @@ export const metadata: Metadata = {
     siteName: "Dariya & Sorena",
     images: [
       {
-        url: "/images/og-cover.png",
-        width: 1344,
-        height: 768,
+        url: "/dariya-sorena-logo.png",
+        width: 718,
+        height: 695,
         alt: "Dariya & Sorena — Official Website",
       },
     ],
@@ -81,7 +81,7 @@ export const metadata: Metadata = {
     title: "Dariya & Sorena — Official Website",
     description:
       "The official website of Persian hip-hop pioneers Dariya & Sorena. Explore their story, music, and legacy.",
-    images: ["/images/og-cover.png"],
+    images: ["/dariya-sorena-logo.png"],
     creator: "@dariyasorena",
   },
   robots: {
